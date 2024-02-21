@@ -1,0 +1,49 @@
+---
+all:
+  vars:
+    x_api_token: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          32646533353265373238666365326330643535386565343861653534376661623839363930343431
+          6566336133343263656261383763326632366362653337340a666639306536366232373664643366
+          61356633336166653964613836363263386134613831663334626538346433643439313337383762
+          3139363932633336340a626361663237656632386434336233613638613338643532366539653537
+          61363035643233353134326362633930356264373733623765636234363733393231313033373431
+          30663130303933363739386430323266613064663536386334336664363365643137653531623034
+          31646636616266646432663739653561663963313531613162343632623464343432333962333634
+          35386630383833323831
+    x_zabbix_username: Admin
+    x_zabbix_password: zabbix
+    ansible_httpapi_port: 80
+    ansible_httpapi_pass: "{{ x_zabbix_password }}"
+    x_templates: []
+    x_custom_templates_files: []
+databases:
+  vars:
+    x_templates:
+    - PostgreSQL by Zabbix agent 2
+  hosts:
+    zabbix-db01:
+    pgdb01:
+app_servers:
+  hosts:
+    zabbix-server01:
+      x_templates:
+      - Zabbix server health
+      - My cool template
+      x_custom_templates_files:
+      - my_cool_template.json
+    app01:
+    app02:
+frontends:
+  vars:
+    x_templates:
+    - Apache by Zabbix agent
+  hosts:
+    zabbix-web01:
+    web01:
+    web02:
+zabbix:
+  hosts:
+    zabbix-db01:
+    zabbix-server01:
+    zabbix-web01:

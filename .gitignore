@@ -1,0 +1,7 @@
+.vault-pass
+*.swp
+roles
+inventories/meetup.yml
+create_vms.yml
+deploy_zabbix.yml
+destroy_infra.yml

@@ -1,0 +1,84 @@
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+  - name: Get information about VMs 
+    linode.cloud.instance_info:
+      api_token: "{{ x_api_token }}"
+      label: "{{ inventory_hostname }}"
+    register: out
+    delegate_to: localhost
+
+  - name: Use IP for host connection
+    set_fact:
+      ansible_host: "{{ out.instance.ipv4[0] }}"
+
+  - name: Initialize Zabbix WebUI IP
+    run_once: true
+    set_fact:
+      x_zabbix_web_ip: "{{ hostvars['zabbix-web01']['ansible_host'] }}"
+
+  - delegate_to: "{{ x_zabbix_web_ip }}"
+    vars:
+      ansible_network_os: community.zabbix.zabbix
+      ansible_connection: httpapi
+      ansible_user: "{{ x_zabbix_username }}"
+    run_once: true
+    block:
+    - name: Get all currently configured hosts in Zabbix
+      community.zabbix.zabbix_host_info:
+      register: out
+
+    - name: Build hosts list present in Zabbix
+      set_fact:
+        x_zabbix_hosts_list: "{{ out | community.general.json_query('hosts[*].host') }}"
+
+    - name: Create a list of hosts to delete from Zabbix server
+      set_fact:
+        x_to_delete_from_zabbix: "{{ x_zabbix_hosts_list | difference(groups.all) }}"
+
+    - name: Delete hosts from Zabbix
+      community.zabbix.zabbix_host:
+        host_name: "{{ item }}"
+        state: absent
+      loop: "{{ x_to_delete_from_zabbix }}"
+
+    - name: Construct a list of all groups
+      set_fact:
+        x_host_groups: "{{ (x_host_groups | default([])) + [item.key] }}"
+      when:
+      - item.key != "all"
+      - item.key != "ungrouped"
+      loop: "{{ groups | dict2items }}"
+
+    - name: Create host groups
+      community.zabbix.zabbix_group:
+        host_groups: "{{ x_host_groups }}"
+
+- hosts: all
+  gather_facts: false
+  vars:
+    ansible_network_os: community.zabbix.zabbix
+    ansible_connection: httpapi
+    ansible_user: "{{ x_zabbix_username }}"
+  tasks:
+  - delegate_to: "{{ x_zabbix_web_ip }}"
+    block:
+    - name: Import custom templates
+      community.zabbix.zabbix_template:
+        template_groups: Templates
+        template_json: "{{ lookup('file', 'files/' + item) }}"
+        state: present
+      with_items: "{{ x_custom_templates_files }}"
+
+    - name: "Add/update hosts"
+      community.zabbix.zabbix_host:
+        host_name: "{{ inventory_hostname }}"
+        host_groups: "{{ group_names + ['Linux servers'] }}"
+        link_templates: "{{ x_templates + ['Linux by Zabbix agent'] }}"
+        interfaces:
+        - type: agent
+          main: 1
+          useip: 1
+          ip: "{{ ansible_host }}"
+        state: present    

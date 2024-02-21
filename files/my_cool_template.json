@@ -1,0 +1,30 @@
+{
+    "zabbix_export": {
+        "version": "6.4",
+        "template_groups": [
+            {
+                "uuid": "7df96b18c230490a9a0a9e2307226338",
+                "name": "Templates"
+            }
+        ],
+        "templates": [
+            {
+               "uuid": "578ef40b11e040b99bfc54e7c300ad9f",
+                "template": "My cool template",
+                "name": "My cool template",
+                "groups": [
+                    {
+                        "name": "Templates"
+                    }
+                ],
+                "items": [
+                    {
+                        "uuid": "30bfc0abb780495480806b37b53d99a9",
+                        "name": "Port 10050 health",
+                        "key": "net.tcp.port[127.0.0.1,10050]"
+                    }
+                ]
+            }
+        ]
+    }
+}
